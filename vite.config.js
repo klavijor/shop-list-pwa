@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Mercado App',
-        short_name: 'MerkApp',
+        name: 'Pass App',
+        short_name: 'PassApp',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
