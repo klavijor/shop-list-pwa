@@ -1,88 +1,95 @@
 <template>
-    <div class="auth-container">
-      <h1>Registro</h1>
-      <form @submit.prevent="register">
-        <input v-model="name" type="text" placeholder="Nombre" required />
-        <input v-model="email" type="email" placeholder="Correo" required />
-        <input v-model="password" type="password" placeholder="Contraseña" required />
-        <button type="submit">Registrarse</button>
-      </form>
-      <p v-if="error" class="error">{{ error }}</p>
-      <p>
-        ¿Ya tienes cuenta?
-        <router-link to="/login">Inicia sesión</router-link>
-      </p>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { supabase } from '../lib/supabase'
-  
-  const email = ref('')
-  const password = ref('')
-  const name = ref('')
-  const error = ref('')
-  const router = useRouter()
-  
-  const register = async () => {
-    error.value = ''
-  
-    const { data, error: err } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value
-    })
-  
-    if (err) {
-      error.value = err.message
-      return
-    }
-  
-    const user = data.user
-    if (user) {
-      // Verificamos si ya existe el perfil
-      const { data: perfilExistente } = await supabase
-        .from('perfiles')
-        .select('id')
-        .eq('usuario_id', user.id)
-        .maybeSingle()
-  
-      if (!perfilExistente) {
-        await supabase.from('perfiles').insert({
-          usuario_id: user.id,
-          nombre: name.value,
-          correo: email.value
-        })
-      }
-    }
-  
-    router.push('/login')
+  <div class="auth-container">
+    <h1>Registro</h1>
+    <form @submit.prevent="register">
+      <input v-model="email" type="email" placeholder="Correo" required />
+      <input v-model="password" type="password" placeholder="Contraseña (mín. 6)" required />
+      <button type="submit" :disabled="loading">{{ loading ? 'Registrando...' : 'Registrarse' }}</button>
+    </form>
+    <p v-if="error" class="error">{{ error }}</p>
+    <p>
+      ¿Ya tienes cuenta?
+      <router-link to="/login">Inicia sesión</router-link>
+    </p>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { supabase } from '../lib/supabase'
+
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const loading = ref(false)
+const router = useRouter()
+
+const register = async () => {
+  error.value = ''
+
+  if (password.value.length < 6) {
+    error.value = 'La contraseña debe tener al menos 6 caracteres.'
+    return
   }
-  </script>
-  
-  <style scoped>
-  .auth-container {
-    max-width: 400px;
-    margin: auto;
-    padding: 2rem;
-    text-align: center;
+
+  loading.value = true
+
+  const { error: err } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value
+  })
+
+  loading.value = false
+
+  if (err) {
+    error.value = err.message
+  } else {
+    router.replace('/home')
   }
-  input {
-    display: block;
-    margin: 1rem auto;
-    padding: 0.5rem;
-    width: 100%;
-  }
-  button {
-    padding: 0.5rem 1rem;
-    background: #42b883;
-    border: none;
-    color: white;
-    border-radius: 4px;
-  }
-  .error {
-    color: red;
-  }
-  </style>
-  
+}
+</script>
+
+<style scoped>
+.auth-container {
+  width: 90%;
+  max-width: 400px;
+  margin: auto;
+  padding: 2rem 1rem;
+  text-align: center;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background: #42b883;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  color: red;
+  margin-top: 1rem;
+}
+
+</style>
